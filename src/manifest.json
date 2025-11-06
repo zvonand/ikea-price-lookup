@@ -1,17 +1,12 @@
 {
-
-  "manifest_version": 2,
+  "manifest_version": 3,
   "name": "IkeLookup",
   "version": "0.0.1",
-
   "description": "Compare IKEA prices in different countries",
-
-
   "content_scripts": [
     {
       "matches": ["*://www.ikea.com/*", "*://ikea.com/*"],
-      "js": ["script.js"]
+      "js": ["price-lookup.js"]
     }
   ]
-
 }
