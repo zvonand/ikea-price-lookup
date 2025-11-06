@@ -1,5 +1,3 @@
-
-
 // document.body.style.border = "5px solid red";
 
 // var symbolToCurrencyName = {
@@ -278,39 +276,41 @@ function extractCartItemData(item) {
 // Handle shopping cart page
 async function handleCartPage() {
     console.log('Processing cart page...');
-    
+
     // Clear previous cart data
     cartItemsData.length = 0;
-    
+
     // Find all cart items using the list structure
     const cartItems = document.querySelectorAll('[class*="_productList"] > li [itemtype="http://schema.org/Product"]');
-    
+
     console.log(`Found ${cartItems.length} cart items`);
-    
+
     if (cartItems.length === 0) {
         console.warn('No cart items found. Trying alternative selector...');
         // Fallback selector
         const fallbackItems = document.querySelectorAll('.cart-ingka-product-identifier__value');
         console.log(`Found ${fallbackItems.length} items with fallback selector`);
-        
+    
         for (const identifierElement of fallbackItems) {
             const item = identifierElement.closest('[itemtype="http://schema.org/Product"]') || identifierElement.closest('li');
             if (item) {
                 await processCartItem(item);
             }
         }
-        return;
+    } else {
+        // Process each cart item
+        for (const item of cartItems) {
+            await processCartItem(item);
+        }
     }
-    
-    // Process each cart item
-    for (const item of cartItems) {
-        await processCartItem(item);
-    }
-    
+
     console.log('Cart items data collected:', cartItemsData);
-    
+
     // Store globally for total calculation
     window.ikeaCartItemsData = cartItemsData;
+
+    // Attach hover listener to cart total
+    attachTotalPriceHoverListener();
 }
 
 // Process a single cart item
@@ -349,6 +349,175 @@ async function processCartItem(item) {
     });
     
     console.log(`Stored data for article ${articleNumber}:`, { quantity, pricesByCountry });
+}
+
+// Calculate total prices for all cart items by country
+function calculateTotalsByCountry() {
+    const totalsByCountry = {};
+    
+    for (const item of cartItemsData) {
+        const { quantity, pricesByCountry } = item;
+        
+        if (!pricesByCountry) continue;
+        
+        for (const [code, data] of Object.entries(pricesByCountry)) {
+            if (data.price !== null) {
+                if (!totalsByCountry[code]) {
+                    totalsByCountry[code] = {
+                        total: 0,
+                        currency: data.currency
+                    };
+                }
+                totalsByCountry[code].total += data.price * quantity;
+            }
+        }
+    }
+    
+    // Round to 2 decimal places
+    for (const code in totalsByCountry) {
+        totalsByCountry[code].total = Math.round(totalsByCountry[code].total * 100) / 100;
+    }
+    
+    return totalsByCountry;
+}
+
+// Create tooltip for cart total
+function createTotalPriceTooltip(totalElement) {
+    const tooltip = document.createElement('div');
+    tooltip.className = 'ikea-total-price-tooltip';
+    tooltip.style.cssText = `
+        position: absolute;
+        background: white;
+        border: 2px solid #0058a3;
+        border-radius: 8px;
+        padding: 12px 16px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        z-index: 10000;
+        display: none;
+        min-width: 220px;
+        font-family: 'Noto IKEA', 'Noto Sans', sans-serif;
+        font-size: 14px;
+        line-height: 1.5;
+        margin-top: 8px;
+        right: 0;
+        top: 100%;
+    `;
+
+    const header = document.createElement('div');
+    header.style.cssText = `
+        font-weight: bold;
+        margin-bottom: 8px;
+        padding-bottom: 8px;
+        border-bottom: 1px solid #e5e5e5;
+        color: #0058a3;
+    `;
+    header.textContent = 'Total in other countries:';
+    tooltip.appendChild(header);
+
+    const priceList = document.createElement('div');
+    priceList.className = 'ikea-total-price-list';
+    tooltip.appendChild(priceList);
+
+    // Position tooltip relative to total price element
+    totalElement.style.position = 'relative';
+    totalElement.appendChild(tooltip);
+
+    return tooltip;
+}
+
+// Update total tooltip content
+function updateTotalTooltipContent(tooltip, totalsByCountry) {
+    const priceList = tooltip.querySelector('.ikea-total-price-list');
+    priceList.innerHTML = '';
+
+    if (!totalsByCountry || Object.keys(totalsByCountry).length === 0) {
+        priceList.innerHTML = '<div style="color: #666; font-style: italic;">Calculating totals...</div>';
+        return;
+    }
+
+    for (const [code, data] of Object.entries(totalsByCountry)) {
+        const priceRow = document.createElement('div');
+        priceRow.style.cssText = `
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 8px;
+            color: #111;
+            border-radius: 4px;
+            margin: 2px 0;
+        `;
+
+        const countryName = document.createElement('span');
+        countryName.textContent = countryNames[code];
+
+        const priceValue = document.createElement('span');
+        priceValue.style.fontWeight = 'bold';
+
+        if (data.total === null || isNaN(data.total)) {
+            priceValue.textContent = 'N/A';
+        } else {
+            priceValue.textContent = `${data.total.toFixed(2)} ${data.currency}`;
+        }
+
+        priceRow.appendChild(countryName);
+        priceRow.appendChild(priceValue);
+        priceList.appendChild(priceRow);
+    }
+}
+
+// Attach hover listener to cart total price
+function attachTotalPriceHoverListener() {
+    // Find the total price element
+    const totalPriceElement = document.querySelector('#order-summary-total .cart-ingka-price');
+    
+    if (!totalPriceElement) {
+        console.warn('Could not find total price element');
+        return;
+    }
+    
+    if (totalPriceElement.dataset.tooltipAttached) {
+        return; // Already processed
+    }
+    
+    console.log('Attaching hover listener to total price');
+    
+    totalPriceElement.dataset.tooltipAttached = 'true';
+    
+    const tooltip = createTotalPriceTooltip(totalPriceElement);
+    let hideTimeout = null;
+    
+    const showTooltip = () => {
+        if (hideTimeout) {
+            clearTimeout(hideTimeout);
+            hideTimeout = null;
+        }
+        tooltip.style.display = 'block';
+        
+        // Calculate totals from cart items data
+        const totalsByCountry = calculateTotalsByCountry();
+        updateTotalTooltipContent(tooltip, totalsByCountry);
+    };
+    
+    const hideTooltip = () => {
+        hideTimeout = setTimeout(() => {
+            tooltip.style.display = 'none';
+        }, 200);
+    };
+    
+    totalPriceElement.style.cursor = 'pointer';
+    
+    // Total price element events
+    totalPriceElement.addEventListener('mouseenter', showTooltip);
+    totalPriceElement.addEventListener('mouseleave', hideTooltip);
+    
+    // Tooltip events
+    tooltip.addEventListener('mouseenter', () => {
+        if (hideTimeout) {
+            clearTimeout(hideTimeout);
+            hideTimeout = null;
+        }
+    });
+    
+    tooltip.addEventListener('mouseleave', hideTooltip);
 }
 
 // Detect page type and initialize
