@@ -2,7 +2,7 @@
 
   "manifest_version": 2,
   "name": "IkeLookup",
-  "version": "0.01",
+  "version": "0.0.1",
 
   "description": "Compare IKEA prices in different countries",
 

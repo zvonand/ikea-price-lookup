@@ -1,25 +1,3 @@
-// document.body.style.border = "5px solid red";
-
-// var symbolToCurrencyName = {
-//     "$": "USD",
-//     "€": "EUR",
-//     "₽": "RUB",
-//     "₴": "UAH",
-// }
-// var currencySymbols = "$€₽₴"
-//
-//
-// localPriceWithCurrency = document.getElementsByClassName("pip-temp-price__sr-text")[0].textContent;
-//
-// localPriceInLocalCurrency = localPriceWithCurrency.match(/\d+(?:\.\d+)?/g);
-//
-// const myRe = new RegExp(currencySymbols, "g");
-//
-//
-// console.log("Local currency is: " + localPriceWithCurrency.match(myRe));
-// console.log("Local price is: " + localPriceInLocalCurrency);
-
-
 // Extract the article number from the current product page and remove dots
 const articleElement = document.querySelector('.pip-product-identifier__value');
 const rawArticleNumber = articleElement?.textContent.trim();
@@ -99,13 +77,13 @@ function createPriceTooltip(priceElement, articleNum) {
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         z-index: 10000;
         display: none;
-        min-width: 220px;
+        width: max-content;
         font-family: 'Noto IKEA', 'Noto Sans', sans-serif;
         font-size: 14px;
         line-height: 1.5;
         margin-top: 8px;
     `;
-    
+
     const header = document.createElement('div');
     header.style.cssText = `
         font-weight: bold;
@@ -113,22 +91,23 @@ function createPriceTooltip(priceElement, articleNum) {
         padding-bottom: 8px;
         border-bottom: 1px solid #e5e5e5;
         color: #0058a3;
+        white-space: nowrap;
     `;
     header.textContent = 'Prices in other countries:';
     tooltip.appendChild(header);
-    
+
     const priceList = document.createElement('div');
     priceList.className = 'ikea-price-list';
     tooltip.appendChild(priceList);
-    
+
     // Store article number for later use
     tooltip.dataset.articleNumber = articleNum;
-    
+
     // Position tooltip relative to price element
     const container = priceElement.closest('.pip-temp-price, .pip-price, .cart-ingka-price') || priceElement.parentElement;
     container.style.position = 'relative';
     container.appendChild(tooltip);
-    
+
     return tooltip;
 }
 
@@ -136,12 +115,12 @@ function createPriceTooltip(priceElement, articleNum) {
 function updateTooltipContent(tooltip, pricesByCountry, articleNum) {
     const priceList = tooltip.querySelector('.ikea-price-list');
     priceList.innerHTML = '';
-    
+
     if (!pricesByCountry || Object.keys(pricesByCountry).length === 0) {
         priceList.innerHTML = '<div style="color: #666; font-style: italic;">Loading prices...</div>';
         return;
     }
-    
+
     for (const [code, data] of Object.entries(pricesByCountry)) {
         const priceRow = document.createElement('a');
         priceRow.href = `${countryBaseUrls[code]}${articleNum}/`;
@@ -157,8 +136,9 @@ function updateTooltipContent(tooltip, pricesByCountry, articleNum) {
             transition: background-color 0.2s;
             cursor: pointer;
             margin: 2px 0;
+            white-space: nowrap;
         `;
-        
+    
         // Add hover effect
         priceRow.addEventListener('mouseenter', () => {
             priceRow.style.backgroundColor = '#f5f5f5';
@@ -166,19 +146,19 @@ function updateTooltipContent(tooltip, pricesByCountry, articleNum) {
         priceRow.addEventListener('mouseleave', () => {
             priceRow.style.backgroundColor = 'transparent';
         });
-        
+    
         const countryName = document.createElement('span');
         countryName.textContent = countryNames[code];
-        
+    
         const priceValue = document.createElement('span');
         priceValue.style.fontWeight = 'bold';
-        
+    
         if (data.price === null) {
             priceValue.textContent = 'N/A';
         } else {
             priceValue.textContent = `${data.price} ${data.currency}`;
         }
-        
+    
         priceRow.appendChild(countryName);
         priceRow.appendChild(priceValue);
         priceList.appendChild(priceRow);
@@ -355,29 +335,44 @@ async function processCartItem(item) {
 function calculateTotalsByCountry() {
     const totalsByCountry = {};
     
+    // Initialize all countries
+    for (const code of Object.keys(countryBaseUrls)) {
+        totalsByCountry[code] = {
+            total: 0,
+            currency: '',
+            hasUnavailableItems: false
+        };
+    }
+
     for (const item of cartItemsData) {
         const { quantity, pricesByCountry } = item;
-        
+    
         if (!pricesByCountry) continue;
-        
-        for (const [code, data] of Object.entries(pricesByCountry)) {
-            if (data.price !== null) {
-                if (!totalsByCountry[code]) {
-                    totalsByCountry[code] = {
-                        total: 0,
-                        currency: data.currency
-                    };
-                }
+    
+        // Check each country
+        for (const code of Object.keys(countryBaseUrls)) {
+            const data = pricesByCountry[code];
+            
+            // If country data exists and has valid price
+            if (data && data.price !== null && data.price > 0) {
                 totalsByCountry[code].total += data.price * quantity;
+                if (!totalsByCountry[code].currency) {
+                    totalsByCountry[code].currency = data.currency;
+                }
+            } else {
+                // Country is missing or has invalid price - mark as unavailable
+                console.log(`Item unavailable in ${code}: ${data ? `price = ${data.price}` : 'no data'}`);
+                totalsByCountry[code].hasUnavailableItems = true;
             }
         }
     }
-    
+
     // Round to 2 decimal places
     for (const code in totalsByCountry) {
         totalsByCountry[code].total = Math.round(totalsByCountry[code].total * 100) / 100;
     }
-    
+
+    console.log('Totals by country:', totalsByCountry);
     return totalsByCountry;
 }
 
@@ -394,7 +389,7 @@ function createTotalPriceTooltip(totalElement) {
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         z-index: 10000;
         display: none;
-        min-width: 220px;
+        width: max-content;
         font-family: 'Noto IKEA', 'Noto Sans', sans-serif;
         font-size: 14px;
         line-height: 1.5;
@@ -410,6 +405,7 @@ function createTotalPriceTooltip(totalElement) {
         padding-bottom: 8px;
         border-bottom: 1px solid #e5e5e5;
         color: #0058a3;
+        white-space: nowrap;
     `;
     header.textContent = 'Total in other countries:';
     tooltip.appendChild(header);
@@ -440,15 +436,32 @@ function updateTotalTooltipContent(tooltip, totalsByCountry) {
         priceRow.style.cssText = `
             display: flex;
             justify-content: space-between;
+            align-items: center;
             padding: 6px 8px;
             color: #111;
             border-radius: 4px;
             margin: 2px 0;
+            white-space: nowrap;
         `;
 
         const countryName = document.createElement('span');
         countryName.textContent = countryNames[code];
 
+        const priceContainer = document.createElement('span');
+        priceContainer.style.cssText = 'display: flex; align-items: center; gap: 6px;';
+        
+        // Add warning triangle if there are unavailable items
+        if (data.hasUnavailableItems) {
+            const warningIcon = document.createElement('span');
+            warningIcon.textContent = '⚠️';
+            warningIcon.title = 'Some items are not available in this country';
+            warningIcon.style.cssText = `
+                font-size: 16px;
+                cursor: help;
+            `;
+            priceContainer.appendChild(warningIcon);
+        }
+        
         const priceValue = document.createElement('span');
         priceValue.style.fontWeight = 'bold';
 
@@ -457,9 +470,11 @@ function updateTotalTooltipContent(tooltip, totalsByCountry) {
         } else {
             priceValue.textContent = `${data.total.toFixed(2)} ${data.currency}`;
         }
+        
+        priceContainer.appendChild(priceValue);
 
         priceRow.appendChild(countryName);
-        priceRow.appendChild(priceValue);
+        priceRow.appendChild(priceContainer);
         priceList.appendChild(priceRow);
     }
 }
