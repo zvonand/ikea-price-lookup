@@ -341,6 +341,25 @@ async function processCartItem(item) {
     console.log(`Stored data for article ${articleNumber}:`, { productName, quantity, pricesByCountry });
 }
 
+// Generate shopping cart URL for a specific country with all items
+function getCartUrlForCountry(countryCode) {
+    // Map country codes to their cart base URLs
+    const cartBaseUrls = {
+        de: 'https://www.ikea.com/de/de/shoppingcart/',
+        fr: 'https://www.ikea.com/fr/fr/shoppingcart/',
+        it: 'https://www.ikea.com/it/it/shoppingcart/',
+        es: 'https://www.ikea.com/es/es/shoppingcart/',
+        nl: 'https://www.ikea.com/nl/nl/shoppingcart/'
+    };
+    
+    // Build query string with all cart items
+    const itemParams = cartItemsData
+        .map(item => `${item.articleNumber}:${item.quantity}`)
+        .join(',');
+    
+    return `${cartBaseUrls[countryCode]}?items=${itemParams}`;
+}
+
 // Calculate total prices for all cart items by country
 function calculateTotalsByCountry() {
     const totalsByCountry = {};
@@ -443,37 +462,60 @@ function updateTotalTooltipContent(tooltip, totalsByCountry) {
         return;
     }
 
+    // Map country codes to their cart URLs
+    const cartUrls = {
+        de: 'https://www.ikea.com/de/de/shoppingcart/',
+        fr: 'https://www.ikea.com/fr/fr/shoppingcart/',
+        it: 'https://www.ikea.com/it/it/shoppingcart/',
+        es: 'https://www.ikea.com/es/es/shoppingcart/',
+        nl: 'https://www.ikea.com/nl/nl/shoppingcart/'
+    };
+
     for (const [code, data] of Object.entries(totalsByCountry)) {
-        const priceRow = document.createElement('div');
+        const priceRow = document.createElement('a');
+        priceRow.href = cartUrls[code];
+        priceRow.target = '_blank';
+        priceRow.rel = 'noopener noreferrer';
         priceRow.style.cssText = `
             display: flex;
             justify-content: space-between;
             align-items: center;
             padding: 6px 8px;
             color: #111;
+            text-decoration: none;
             border-radius: 4px;
+            transition: background-color 0.2s;
+            cursor: pointer;
             margin: 2px 0;
             white-space: nowrap;
         `;
+        
+        // Add hover effect
+        priceRow.addEventListener('mouseenter', () => {
+            priceRow.style.backgroundColor = '#f5f5f5';
+        });
+        priceRow.addEventListener('mouseleave', () => {
+            priceRow.style.backgroundColor = 'transparent';
+        });
 
         const countryName = document.createElement('span');
         countryName.textContent = countryNames[code];
 
         const priceContainer = document.createElement('span');
         priceContainer.style.cssText = 'display: flex; align-items: center; gap: 6px;';
-        
+    
         // Add warning triangle if there are unavailable items (before price)
         if (data.hasUnavailableItems) {
             const warningIcon = document.createElement('span');
             warningIcon.textContent = '⚠️';
-            
+        
             // Build tooltip text with product names and article numbers
             const unavailableList = data.unavailableItems.map(articleNum => {
                 const item = cartItemsData.find(i => i.articleNumber === articleNum);
                 const name = item?.productName || 'Unknown';
                 return `${name} ${articleNum}`;
             }).join('\n');
-            
+        
             warningIcon.title = `Some items are not available in this country:\n${unavailableList}`;
             warningIcon.style.cssText = `
                 font-size: 16px;
@@ -481,7 +523,7 @@ function updateTotalTooltipContent(tooltip, totalsByCountry) {
             `;
             priceContainer.appendChild(warningIcon);
         }
-        
+    
         const priceValue = document.createElement('span');
         priceValue.style.fontWeight = 'bold';
 
@@ -490,7 +532,7 @@ function updateTotalTooltipContent(tooltip, totalsByCountry) {
         } else {
             priceValue.textContent = `${data.total.toFixed(2)} ${data.currency}`;
         }
-        
+    
         priceContainer.appendChild(priceValue);
 
         priceRow.appendChild(countryName);
