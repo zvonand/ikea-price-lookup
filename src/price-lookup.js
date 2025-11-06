@@ -222,11 +222,16 @@ function attachPriceHoverListeners(priceElement, articleNum) {
 // Handle product detail page
 function handleProductPage() {
     if (!articleNumber) return;
+
+    // Find both regular price and discounted price elements
+    const priceElements = document.querySelectorAll('.pip-temp-price__integer, .pip-price__integer');
     
-    const priceElement = document.querySelector('.pip-temp-price__integer, .pip-price__integer');
-    if (priceElement) {
-        attachPriceHoverListeners(priceElement, articleNumber);
-        
+    if (priceElements.length > 0) {
+        // Attach to all price elements (handles both old and new prices)
+        priceElements.forEach(priceElement => {
+            attachPriceHoverListeners(priceElement, articleNumber);
+        });
+    
         // Pre-fetch prices in the background
         fetchPrices(articleNumber).then(() => {
             console.log('Fetched prices for product:', articleNumber);

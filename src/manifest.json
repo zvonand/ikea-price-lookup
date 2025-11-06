@@ -3,6 +3,15 @@
   "name": "IkeLookup",
   "version": "0.0.1",
   "description": "Compare IKEA prices in different countries",
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "ikealookup@example.com",
+      "data_collection_permissions": {
+        "required": ["websiteActivity"],
+        "optional": []
+      }
+    }
+  },
   "content_scripts": [
     {
       "matches": ["*://www.ikea.com/*", "*://ikea.com/*"],
