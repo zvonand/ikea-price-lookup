@@ -321,14 +321,24 @@ async function processCartItem(item) {
     // Fetch prices for this item
     const pricesByCountry = await fetchPrices(articleNumber);
     
+    // Get product name - it's in the link within the price module
+    let productName = '';
+    const productNameElement = item.querySelector('.cart-ingka-price-module__name-decorator .cart-ingka-link .cart-ingka-text');
+    if (productNameElement) {
+        productName = productNameElement.textContent.trim();
+    }
+    
+    console.log(`Product name for ${articleNumber}: ${productName}`);
+
     // Store in cart data
     cartItemsData.push({
         articleNumber,
+        productName,
         quantity,
         pricesByCountry
     });
-    
-    console.log(`Stored data for article ${articleNumber}:`, { quantity, pricesByCountry });
+
+    console.log(`Stored data for article ${articleNumber}:`, { productName, quantity, pricesByCountry });
 }
 
 // Calculate total prices for all cart items by country
@@ -340,12 +350,13 @@ function calculateTotalsByCountry() {
         totalsByCountry[code] = {
             total: 0,
             currency: '',
-            hasUnavailableItems: false
+            hasUnavailableItems: false,
+            unavailableItems: []
         };
     }
 
     for (const item of cartItemsData) {
-        const { quantity, pricesByCountry } = item;
+        const { articleNumber, quantity, pricesByCountry } = item;
     
         if (!pricesByCountry) continue;
     
@@ -363,6 +374,7 @@ function calculateTotalsByCountry() {
                 // Country is missing or has invalid price - mark as unavailable
                 console.log(`Item unavailable in ${code}: ${data ? `price = ${data.price}` : 'no data'}`);
                 totalsByCountry[code].hasUnavailableItems = true;
+                totalsByCountry[code].unavailableItems.push(articleNumber);
             }
         }
     }
@@ -450,11 +462,19 @@ function updateTotalTooltipContent(tooltip, totalsByCountry) {
         const priceContainer = document.createElement('span');
         priceContainer.style.cssText = 'display: flex; align-items: center; gap: 6px;';
         
-        // Add warning triangle if there are unavailable items
+        // Add warning triangle if there are unavailable items (before price)
         if (data.hasUnavailableItems) {
             const warningIcon = document.createElement('span');
             warningIcon.textContent = '⚠️';
-            warningIcon.title = 'Some items are not available in this country';
+            
+            // Build tooltip text with product names and article numbers
+            const unavailableList = data.unavailableItems.map(articleNum => {
+                const item = cartItemsData.find(i => i.articleNumber === articleNum);
+                const name = item?.productName || 'Unknown';
+                return `${name} ${articleNum}`;
+            }).join('\n');
+            
+            warningIcon.title = `Some items are not available in this country:\n${unavailableList}`;
             warningIcon.style.cssText = `
                 font-size: 16px;
                 cursor: help;
