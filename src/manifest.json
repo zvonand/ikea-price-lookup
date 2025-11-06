@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "IkeLookup",
+  "name": "IkeaPriceLookup",
   "version": "0.0.1",
   "description": "Compare IKEA prices in different countries",
   "browser_specific_settings": {
