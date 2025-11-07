@@ -31,11 +31,11 @@ const cartItemsData = [];
 async function fetchPrices(articleNumber) {
     // Return cached prices if available
     if (priceCache[articleNumber]) {
-        console.log(`Using cached prices for ${articleNumber}`);
+        // console.log(`Using cached prices for ${articleNumber}`);
         return priceCache[articleNumber];
     }
     
-    console.log(`Fetching prices for article ${articleNumber}`);
+    // console.log(`Fetching prices for article ${articleNumber}`);
     const pricesByCountry = {};
     const promises = Object.entries(countryBaseUrls).map(async ([code, baseUrl]) => {
         try {
@@ -60,7 +60,7 @@ async function fetchPrices(articleNumber) {
     
     // Cache the results
     priceCache[articleNumber] = pricesByCountry;
-    console.log(`Cached prices for ${articleNumber}:`, pricesByCountry);
+    // console.log(`Cached prices for ${articleNumber}:`, pricesByCountry);
     return pricesByCountry;
 }
 
@@ -234,7 +234,7 @@ function handleProductPage() {
     
         // Pre-fetch prices in the background
         fetchPrices(articleNumber).then(() => {
-            console.log('Fetched prices for product:', articleNumber);
+            // console.log('Fetched prices for product:', articleNumber);
         });
     }
 }
@@ -260,22 +260,16 @@ function extractCartItemData(item) {
 
 // Handle shopping cart page
 async function handleCartPage() {
-    console.log('Processing cart page...');
-
     // Clear previous cart data
     cartItemsData.length = 0;
 
     // Find all cart items using the list structure
     const cartItems = document.querySelectorAll('[class*="_productList"] > li [itemtype="http://schema.org/Product"]');
 
-    console.log(`Found ${cartItems.length} cart items`);
-
     if (cartItems.length === 0) {
-        console.warn('No cart items found. Trying alternative selector...');
         // Fallback selector
         const fallbackItems = document.querySelectorAll('.cart-ingka-product-identifier__value');
-        console.log(`Found ${fallbackItems.length} items with fallback selector`);
-    
+
         for (const identifierElement of fallbackItems) {
             const item = identifierElement.closest('[itemtype="http://schema.org/Product"]') || identifierElement.closest('li');
             if (item) {
@@ -288,8 +282,6 @@ async function handleCartPage() {
             await processCartItem(item);
         }
     }
-
-    console.log('Cart items data collected:', cartItemsData);
 
     // Store globally for total calculation
     window.ikeaCartItemsData = cartItemsData;
@@ -306,9 +298,7 @@ async function processCartItem(item) {
         console.warn('Could not extract article number from cart item:', item);
         return;
     }
-    
-    console.log(`Processing cart item: Article ${articleNumber}, Quantity ${quantity}`);
-    
+
     // Find the price element - the span that contains the screen reader text
     const priceElement = item.querySelector('.cart-ingka-price__sr-text');
     
@@ -332,8 +322,6 @@ async function processCartItem(item) {
     if (productNameElement) {
         productName = productNameElement.textContent.trim();
     }
-    
-    console.log(`Product name for ${articleNumber}: ${productName}`);
 
     // Store in cart data
     cartItemsData.push({
@@ -342,8 +330,6 @@ async function processCartItem(item) {
         quantity,
         pricesByCountry
     });
-
-    console.log(`Stored data for article ${articleNumber}:`, { productName, quantity, pricesByCountry });
 }
 
 // Generate shopping cart URL for a specific country with all items
@@ -396,7 +382,7 @@ function calculateTotalsByCountry() {
                 }
             } else {
                 // Country is missing or has invalid price - mark as unavailable
-                console.log(`Item unavailable in ${code}: ${data ? `price = ${data.price}` : 'no data'}`);
+                // console.log(`Item unavailable in ${code}: ${data ? `price = ${data.price}` : 'no data'}`);
                 totalsByCountry[code].hasUnavailableItems = true;
                 totalsByCountry[code].unavailableItems.push(articleNumber);
             }
@@ -408,7 +394,6 @@ function calculateTotalsByCountry() {
         totalsByCountry[code].total = Math.round(totalsByCountry[code].total * 100) / 100;
     }
 
-    console.log('Totals by country:', totalsByCountry);
     return totalsByCountry;
 }
 
@@ -559,9 +544,7 @@ function attachTotalPriceHoverListener() {
     if (totalPriceElement.dataset.tooltipAttached) {
         return; // Already processed
     }
-    
-    console.log('Attaching hover listener to total price');
-    
+
     totalPriceElement.dataset.tooltipAttached = 'true';
     
     const tooltip = createTotalPriceTooltip(totalPriceElement);
@@ -610,10 +593,8 @@ function initialize() {
                        document.querySelector('.cart-ingka-product-identifier__value');
     
     if (isProductPage) {
-        console.log('Detected product page');
         handleProductPage();
     } else if (isCartPage) {
-        console.log('Detected cart page');
         // Wait a bit for dynamic content to load
         setTimeout(handleCartPage, 1000);
     }
