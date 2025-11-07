@@ -1,4 +1,4 @@
-# 🛋️ Ikea Price Lookup
+# Ikea Price Lookup
 
 **Compare IKEA prices across different countries instantly!**
 
