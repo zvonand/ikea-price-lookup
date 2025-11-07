@@ -6,6 +6,13 @@ A lightweight browser extension that helps you find the best deals by comparing 
 
 ---
 
+## Usage
+
+1. Visit any IKEA product page (e.g., `www.ikea.com/de/de/p/...`) or cart page
+2. The extension automatically loads price comparison data
+3. View prices from different countries side-by-side
+4. Click on the country name to open the article in that country
+
 <!---
 ## 📦 Installation
 
@@ -21,24 +28,5 @@ A lightweight browser extension that helps you find the best deals by comparing 
 3. Open `chrome://extensions/` (or `edge://extensions/`)
 4. Enable **Developer mode**
 5. Click **Load unpacked** and select the extracted folder
-
----
-
-## 🚀 Usage
-
-1. Visit any IKEA product page (e.g., `www.ikea.com/us/en/p/...`)
-2. The extension automatically loads price comparison data
-3. View prices from different countries side-by-side
-4. Find the best deal!
-
----
-
-## 🛠️ Development
-
-### Prerequisites
-- Node.js and npm (for web-ext tools)
-- Firefox or Chrome browser
-
-### Setup
 
 -->
