@@ -3,49 +3,31 @@ const articleElement = document.querySelector('.pip-product-identifier__value');
 const rawArticleNumber = articleElement?.textContent.trim();
 const articleNumber = rawArticleNumber?.replace(/\./g, '');
 
-// Mapping of country codes to their IKEA base URLs
-const countryBaseUrls = {
-    de: 'https://www.ikea.com/de/de/',
-    fr: 'https://www.ikea.com/fr/fr/',
-    it: 'https://www.ikea.com/it/it/',
-    es: 'https://www.ikea.com/es/es/',
-    nl: 'https://www.ikea.com/nl/nl/',
-    pl: 'https://www.ikea.com/pl/pl/',
-    cz: 'https://www.ikea.com/cz/cs/',
-    pt: 'https://www.ikea.com/pt/pt/',
-    ch: 'https://www.ikea.com/ch/de/',
-    at: 'https://www.ikea.com/at/de/',
-    sk: 'https://www.ikea.com/sk/sk/',
-    si: 'https://www.ikea.com/si/sl/',
-    hu: 'https://www.ikea.com/hu/hu/',
-    ro: 'https://www.ikea.com/ro/ro/',
-    fi: 'https://www.ikea.com/fi/fi/',
-    se: 'https://www.ikea.com/se/sv/',
-    no: 'https://www.ikea.com/no/no/',
-    dk: 'https://www.ikea.com/dk/da/'
-};
+// Active countries based on user settings (loaded from config.js)
+let countryBaseUrls = {};
 
-// Country names for better display
-const countryNames = {
-    de: '🇩🇪 Germany',
-    fr: '🇫🇷 France',
-    it: '🇮🇹 Italy',
-    es: '🇪🇸 Spain',
-    nl: '🇳🇱 Netherlands',
-    pl: '🇵🇱 Poland',
-    cz: '🇨🇿 Czechia',
-    pt: '🇵🇹 Portugal',
-    ch: '🇨🇭 Switzerland',
-    at: '🇦🇹 Austria',
-    sk: '🇸🇰 Slovakia',
-    si: '🇸🇮 Slovenia',
-    hu: '🇭🇺 Hungary',
-    ro: '🇷🇴 Romania',
-    fi: '🇫🇮 Finland',
-    se: '🇸🇪 Sweden',
-    no: '🇳🇴 Norway',
-    dk: '🇩🇰 Denmark'
-};
+// Load user settings
+async function loadSettings() {
+    try {
+        const result = await browser.storage.sync.get('selectedCountries');
+        const selectedCountries = result.selectedCountries || defaultCountries;
+        
+        // Filter countryBaseUrls based on selected countries
+        countryBaseUrls = {};
+        for (const code of selectedCountries) {
+            if (allCountryBaseUrls[code]) {
+                countryBaseUrls[code] = allCountryBaseUrls[code];
+            }
+        }
+    } catch (e) {
+        console.error('Failed to load settings, using defaults', e);
+        // Use default countries on error
+        countryBaseUrls = {};
+        for (const code of defaultCountries) {
+            countryBaseUrls[code] = allCountryBaseUrls[code];
+        }
+    }
+}
 
 // Cache to store fetched prices keyed by article number
 const priceCache = {};
@@ -643,12 +625,15 @@ function attachTotalPriceHoverListener() {
 }
 
 // Detect page type and initialize
-function initialize() {
+async function initialize() {
+    // Load settings first
+    await loadSettings();
+    
     const isProductPage = document.querySelector('.pip-product-identifier__value');
     const isCartPage = window.location.pathname.includes('/shoppingcart') || 
                        window.location.pathname.includes('/cart') ||
                        document.querySelector('.cart-ingka-product-identifier__value');
-    
+
     if (isProductPage) {
         handleProductPage();
     } else if (isCartPage) {
@@ -668,3 +653,11 @@ const observer = new MutationObserver((mutations) => {
 });
 
 observer.observe(document.body, { childList: true, subtree: true });
+
+// Listen for settings changes
+browser.storage.onChanged.addListener((changes, area) => {
+    if (area === 'sync' && changes.selectedCountries) {
+        // Reload settings and reinitialize
+        initialize();
+    }
+});

@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>IKEA Price Compare - Settings</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding: 20px;
+            max-width: 600px;
+            margin: 0 auto;
+            background: #f5f5f5;
+        }
+
+        h1 {
+            color: #0058a3;
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .section {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+
+        .section-title {
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #333;
+            font-size: 16px;
+        }
+
+        .countries-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 10px;
+        }
+
+        .country-item {
+            display: flex;
+            align-items: center;
+            padding: 8px;
+            border-radius: 4px;
+            transition: background-color 0.2s;
+        }
+
+        .country-item:hover {
+            background-color: #f5f5f5;
+        }
+
+        .country-item input[type="checkbox"] {
+            margin-right: 10px;
+            cursor: pointer;
+        }
+
+        .country-item label {
+            cursor: pointer;
+            user-select: none;
+            flex: 1;
+        }
+
+        .actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: background-color 0.2s;
+        }
+
+        .btn-primary {
+            background-color: #0058a3;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: #004080;
+        }
+
+        .btn-secondary {
+            background-color: #e5e5e5;
+            color: #333;
+        }
+
+        .btn-secondary:hover {
+            background-color: #d0d0d0;
+        }
+
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 10px;
+            display: none;
+        }
+
+        .status.success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+    </style>
+</head>
+<body>
+<h1>⚙️ IKEA Price Compare Settings</h1>
+<p class="subtitle">Select which countries you want to compare prices with</p>
+
+<div class="section">
+    <div class="section-title">Countries to Compare</div>
+    <div class="countries-grid" id="countriesList"></div>
+
+    <div class="actions">
+        <button id="saveBtn" class="btn-primary">Save Settings</button>
+        <button id="selectAllBtn" class="btn-secondary">Select All</button>
+        <button id="deselectAllBtn" class="btn-secondary">Deselect All</button>
+    </div>
+
+    <div id="status" class="status"></div>
+</div>
+    
+    <script src="config.js"></script>
+    <script src="options.js"></script>
+</body>
+</html>
