@@ -113,7 +113,7 @@ function createPriceTooltip(priceElement, articleNum) {
     priceList.style.cssText = `
         display: grid;
         grid-template-columns: auto auto;
-        gap: 24px 24px;
+        gap: 2px 24px;
         align-items: center;
     `;
     tooltip.appendChild(priceList);
@@ -472,7 +472,7 @@ function createTotalPriceTooltip(totalElement) {
     priceList.style.cssText = `
         display: grid;
         grid-template-columns: auto auto;
-        gap: 24px 24px;
+        gap: 2px 24px;
         align-items: center;
     `;
     tooltip.appendChild(priceList);
