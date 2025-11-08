@@ -9,7 +9,20 @@ const countryBaseUrls = {
     fr: 'https://www.ikea.com/fr/fr/',
     it: 'https://www.ikea.com/it/it/',
     es: 'https://www.ikea.com/es/es/',
-    nl: 'https://www.ikea.com/nl/nl/'
+    nl: 'https://www.ikea.com/nl/nl/',
+    pl: 'https://www.ikea.com/pl/pl/',
+    cz: 'https://www.ikea.com/cz/cs/',
+    pt: 'https://www.ikea.com/pt/pt/',
+    ch: 'https://www.ikea.com/ch/de/',
+    at: 'https://www.ikea.com/at/de/',
+    sk: 'https://www.ikea.com/sk/sk/',
+    si: 'https://www.ikea.com/si/sl/',
+    hu: 'https://www.ikea.com/hu/hu/',
+    ro: 'https://www.ikea.com/ro/ro/',
+    fi: 'https://www.ikea.com/fi/fi/',
+    se: 'https://www.ikea.com/se/sv/',
+    no: 'https://www.ikea.com/no/no/',
+    dk: 'https://www.ikea.com/dk/da/'
 };
 
 // Country names for better display
@@ -18,7 +31,20 @@ const countryNames = {
     fr: '🇫🇷 France',
     it: '🇮🇹 Italy',
     es: '🇪🇸 Spain',
-    nl: '🇳🇱 Netherlands'
+    nl: '🇳🇱 Netherlands',
+    pl: '🇵🇱 Poland',
+    cz: '🇨🇿 Czechia',
+    pt: '🇵🇹 Portugal',
+    ch: '🇨🇭 Switzerland',
+    at: '🇦🇹 Austria',
+    sk: '🇸🇰 Slovakia',
+    si: '🇸🇮 Slovenia',
+    hu: '🇭🇺 Hungary',
+    ro: '🇷🇴 Romania',
+    fi: '🇫🇮 Finland',
+    se: '🇸🇪 Sweden',
+    no: '🇳🇴 Norway',
+    dk: '🇩🇰 Denmark'
 };
 
 // Cache to store fetched prices keyed by article number
