@@ -60,12 +60,31 @@ async function fetchPrices(articleNumber) {
                 
                 // Extract decimal value if present (e.g., ",99" or ".99")
                 if (priceDecimalElement) {
-                    const decimalText = priceDecimalElement.textContent.trim().replace(/[,.\s]/g, '');
-                    decimalPart = parseFloat('0.' + decimalText) || 0;
+                    const decimalText = priceDecimalElement.textContent.trim();
+                    // Skip if it contains only ",-" or "-" (used in some countries to indicate no decimals)
+                    if (!decimalText.match(/^[,.\\s\-–]+$/)) {
+                        const cleanedDecimal = decimalText.replace(/[,.\\s\-–]/g, '');
+                        if (cleanedDecimal) {
+                            decimalPart = parseFloat('0.' + cleanedDecimal) || 0;
+                        }
+                    }
+                }
+            
+                const price = integerPart + decimalPart;
+                
+                // Get currency from page
+                let currency = currencyElement?.textContent.trim() || '';
+                
+                // Check if currency is only punctuation/dashes (like ",–" in Czechia) - if so, ignore it
+                if (currency && currency.match(/^[,.\\s\-–]+$/)) {
+                    currency = '';
                 }
                 
-                const price = integerPart + decimalPart;
-                const currency = currencyElement?.textContent.trim() || '';
+                // If currency is empty, use fallback
+                if (!currency) {
+                    currency = fallbackCurrencies[code] || '';
+                }
+                
                 pricesByCountry[code] = { price, currency };
             }
         } catch (e) {

@@ -52,5 +52,24 @@ const countryNames = {
     rs: '🇷🇸 Serbia'
 };
 
+// Fallback currencies for countries where currency is not displayed on website
+const fallbackCurrencies = {
+    se: 'SEK',     // Sweden - Swedish Krona
+    dk: 'DKK',     // Denmark - Danish Krone
+    cz: 'CZK',     // Czechia - Czech Koruna
+    fi: '€',       // Finland - Euro
+    no: 'NOK',     // Norway - Norwegian Krone
+    pl: 'PLN',     // Poland - Polish Zloty
+    hr: '€',       // Croatia - Euro
+    hu: 'HUF',     // Hungary - Hungarian Forint
+    ro: 'RON',     // Romania - Romanian Leu
+    rs: 'RSD',     // Serbia - Serbian Dinar
+    eg: 'EGP',     // Egypt - Egyptian Pound
+    ie: '€',       // Ireland - Euro
+    ch: 'CHF',     // Switzerland - Swiss Franc
+    sk: '€',       // Slovakia - Euro
+    si: '€'        // Slovenia - Euro
+};
+
 // Default countries (original 5)
 const defaultCountries = ['de', 'fr', 'it', 'es', 'nl'];
