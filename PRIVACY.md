@@ -40,7 +40,7 @@ These permissions are used ONLY for the extension's core functionality.
 
 ### Data Storage
 The only data stored is:
-- **Temporary price cache**: Stored in your browser's memory to avoid repeated requests. Automatically cleared when you close your browser.
+- **Temporary cache**: Stored in your browser's memory to avoid repeated requests. Automatically cleared when you close your browser.
 
 ### Updates to This Policy
 If we ever change how the extension works, we'll update this policy. Given that we collect absolutely nothing, changes are unlikely.
