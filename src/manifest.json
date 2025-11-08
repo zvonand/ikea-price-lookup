@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Ikea Price Compare",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "description": "Compare IKEA prices in different countries",
   "browser_specific_settings": {
     "gecko": {

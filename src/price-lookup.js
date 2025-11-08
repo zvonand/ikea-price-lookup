@@ -42,11 +42,21 @@ async function fetchPrices(articleNumber) {
             const response = await fetch(`${baseUrl}${articleNumber}/`);
             const html = await response.text();
             const doc = new DOMParser().parseFromString(html, 'text/html');
-            const priceElement = doc.querySelector('.pip-price__integer');
-            const currencyElement = doc.querySelector('.pip-price__currencymarker');
-            
-            if (priceElement) {
-                const price = parseFloat(priceElement.textContent.trim().replace(/\s/g, ''));
+            const priceIntegerElement = doc.querySelector('.pip-price__integer');
+            const priceDecimalElement = doc.querySelector('.pip-price__decimal');
+            const currencyElement = doc.querySelector('.pip-price__currency');
+        
+            if (priceIntegerElement) {
+                const integerPart = parseFloat(priceIntegerElement.textContent.trim().replace(/\s/g, ''));
+                let decimalPart = 0;
+                
+                // Extract decimal value if present (e.g., ",99" or ".99")
+                if (priceDecimalElement) {
+                    const decimalText = priceDecimalElement.textContent.trim().replace(/[,.\s]/g, '');
+                    decimalPart = parseFloat('0.' + decimalText) || 0;
+                }
+                
+                const price = integerPart + decimalPart;
                 const currency = currencyElement?.textContent.trim() || '';
                 pricesByCountry[code] = { price, currency };
             }
@@ -55,9 +65,9 @@ async function fetchPrices(articleNumber) {
             pricesByCountry[code] = { price: null, currency: '' };
         }
     });
-    
+
     await Promise.all(promises);
-    
+
     // Cache the results
     priceCache[articleNumber] = pricesByCountry;
     // console.log(`Cached prices for ${articleNumber}:`, pricesByCountry);
@@ -73,11 +83,13 @@ function createPriceTooltip(priceElement, articleNum) {
         background: white;
         border: 2px solid #0058a3;
         border-radius: 8px;
-        padding: 12px 16px;
+        padding: 12px 20px;
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         z-index: 10000;
         display: none;
         width: max-content;
+        min-width: max-content;
+        max-width: 400px;
         font-family: 'Noto IKEA', 'Noto Sans', sans-serif;
         font-size: 14px;
         line-height: 1.5;
@@ -98,6 +110,12 @@ function createPriceTooltip(priceElement, articleNum) {
 
     const priceList = document.createElement('div');
     priceList.className = 'ikea-price-list';
+    priceList.style.cssText = `
+        display: grid;
+        grid-template-columns: auto auto;
+        gap: 24px 24px;
+        align-items: center;
+    `;
     tooltip.appendChild(priceList);
 
     // Store article number for later use
@@ -122,46 +140,62 @@ function updateTooltipContent(tooltip, pricesByCountry, articleNum) {
     }
 
     for (const [code, data] of Object.entries(pricesByCountry)) {
-        const priceRow = document.createElement('a');
-        priceRow.href = `${countryBaseUrls[code]}${articleNum}/`;
-        priceRow.target = '_blank';
-        priceRow.rel = 'noopener noreferrer';
-        priceRow.style.cssText = `
-            display: flex;
-            justify-content: space-between;
+        const countryLink = document.createElement('a');
+        countryLink.href = `${countryBaseUrls[code]}${articleNum}/`;
+        countryLink.target = '_blank';
+        countryLink.rel = 'noopener noreferrer';
+        countryLink.style.cssText = `
             padding: 6px 8px;
             color: #111;
             text-decoration: none;
             border-radius: 4px;
             transition: background-color 0.2s;
             cursor: pointer;
-            margin: 2px 0;
             white-space: nowrap;
+            grid-column: 1;
         `;
-    
-        // Add hover effect
-        priceRow.addEventListener('mouseenter', () => {
-            priceRow.style.backgroundColor = '#f5f5f5';
-        });
-        priceRow.addEventListener('mouseleave', () => {
-            priceRow.style.backgroundColor = 'transparent';
-        });
-    
-        const countryName = document.createElement('span');
-        countryName.textContent = countryNames[code];
-    
-        const priceValue = document.createElement('span');
-        priceValue.style.fontWeight = 'bold';
-    
+        countryLink.textContent = countryNames[code];
+
+        const priceLink = document.createElement('a');
+        priceLink.href = `${countryBaseUrls[code]}${articleNum}/`;
+        priceLink.target = '_blank';
+        priceLink.rel = 'noopener noreferrer';
+        priceLink.style.cssText = `
+            padding: 6px 8px;
+            color: #111;
+            text-decoration: none;
+            border-radius: 4px;
+            transition: background-color 0.2s;
+            cursor: pointer;
+            font-weight: bold;
+            white-space: nowrap;
+            text-align: right;
+            grid-column: 2;
+        `;
+
         if (data.price === null) {
-            priceValue.textContent = 'N/A';
+            priceLink.textContent = 'N/A';
         } else {
-            priceValue.textContent = `${data.price} ${data.currency}`;
+            priceLink.textContent = `${data.price.toFixed(2)} ${data.currency}`;
         }
-    
-        priceRow.appendChild(countryName);
-        priceRow.appendChild(priceValue);
-        priceList.appendChild(priceRow);
+
+        // Add hover effect to both elements
+        const addHoverEffect = (element) => {
+            element.addEventListener('mouseenter', () => {
+                countryLink.style.backgroundColor = '#f5f5f5';
+                priceLink.style.backgroundColor = '#f5f5f5';
+            });
+            element.addEventListener('mouseleave', () => {
+                countryLink.style.backgroundColor = 'transparent';
+                priceLink.style.backgroundColor = 'transparent';
+            });
+        };
+
+        addHoverEffect(countryLink);
+        addHoverEffect(priceLink);
+
+        priceList.appendChild(countryLink);
+        priceList.appendChild(priceLink);
     }
 }
 
@@ -406,11 +440,13 @@ function createTotalPriceTooltip(totalElement) {
         background: white;
         border: 2px solid #0058a3;
         border-radius: 8px;
-        padding: 12px 16px;
+        padding: 12px 20px;
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         z-index: 10000;
         display: none;
         width: max-content;
+        min-width: max-content;
+        max-width: 400px;
         font-family: 'Noto IKEA', 'Noto Sans', sans-serif;
         font-size: 14px;
         line-height: 1.5;
@@ -433,6 +469,12 @@ function createTotalPriceTooltip(totalElement) {
 
     const priceList = document.createElement('div');
     priceList.className = 'ikea-total-price-list';
+    priceList.style.cssText = `
+        display: grid;
+        grid-template-columns: auto auto;
+        gap: 24px 24px;
+        align-items: center;
+    `;
     tooltip.appendChild(priceList);
 
     // Position tooltip relative to total price element
@@ -462,50 +504,53 @@ function updateTotalTooltipContent(tooltip, totalsByCountry) {
     };
 
     for (const [code, data] of Object.entries(totalsByCountry)) {
-        const priceRow = document.createElement('a');
-        priceRow.href = cartUrls[code];
-        priceRow.target = '_blank';
-        priceRow.rel = 'noopener noreferrer';
-        priceRow.style.cssText = `
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+        const countryLink = document.createElement('a');
+        countryLink.href = cartUrls[code];
+        countryLink.target = '_blank';
+        countryLink.rel = 'noopener noreferrer';
+        countryLink.style.cssText = `
             padding: 6px 8px;
             color: #111;
             text-decoration: none;
             border-radius: 4px;
             transition: background-color 0.2s;
             cursor: pointer;
-            margin: 2px 0;
             white-space: nowrap;
+            grid-column: 1;
         `;
-        
-        // Add hover effect
-        priceRow.addEventListener('mouseenter', () => {
-            priceRow.style.backgroundColor = '#f5f5f5';
-        });
-        priceRow.addEventListener('mouseleave', () => {
-            priceRow.style.backgroundColor = 'transparent';
-        });
+        countryLink.textContent = countryNames[code];
 
-        const countryName = document.createElement('span');
-        countryName.textContent = countryNames[code];
+        const priceContainer = document.createElement('a');
+        priceContainer.href = cartUrls[code];
+        priceContainer.target = '_blank';
+        priceContainer.rel = 'noopener noreferrer';
+        priceContainer.style.cssText = `
+            padding: 6px 8px;
+            color: #111;
+            text-decoration: none;
+            border-radius: 4px;
+            transition: background-color 0.2s;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            justify-content: flex-end;
+            white-space: nowrap;
+            grid-column: 2;
+        `;
 
-        const priceContainer = document.createElement('span');
-        priceContainer.style.cssText = 'display: flex; align-items: center; gap: 6px;';
-    
         // Add warning triangle if there are unavailable items (before price)
         if (data.hasUnavailableItems) {
             const warningIcon = document.createElement('span');
             warningIcon.textContent = '⚠️';
-        
+    
             // Build tooltip text with product names and article numbers
             const unavailableList = data.unavailableItems.map(articleNum => {
                 const item = cartItemsData.find(i => i.articleNumber === articleNum);
                 const name = item?.productName || 'Unknown';
                 return `${name} ${articleNum}`;
             }).join('\n');
-        
+    
             warningIcon.title = `Some items are not available in this country:\n${unavailableList}`;
             warningIcon.style.cssText = `
                 font-size: 16px;
@@ -513,21 +558,35 @@ function updateTotalTooltipContent(tooltip, totalsByCountry) {
             `;
             priceContainer.appendChild(warningIcon);
         }
-    
+
         const priceValue = document.createElement('span');
-        priceValue.style.fontWeight = 'bold';
+        priceValue.style.cssText = 'font-weight: bold; white-space: nowrap;';
 
         if (data.total === null || isNaN(data.total)) {
             priceValue.textContent = 'N/A';
         } else {
             priceValue.textContent = `${data.total.toFixed(2)} ${data.currency}`;
         }
-    
+
         priceContainer.appendChild(priceValue);
 
-        priceRow.appendChild(countryName);
-        priceRow.appendChild(priceContainer);
-        priceList.appendChild(priceRow);
+        // Add hover effect to both elements
+        const addHoverEffect = (element) => {
+            element.addEventListener('mouseenter', () => {
+                countryLink.style.backgroundColor = '#f5f5f5';
+                priceContainer.style.backgroundColor = '#f5f5f5';
+            });
+            element.addEventListener('mouseleave', () => {
+                countryLink.style.backgroundColor = 'transparent';
+                priceContainer.style.backgroundColor = 'transparent';
+            });
+        };
+
+        addHoverEffect(countryLink);
+        addHoverEffect(priceContainer);
+
+        priceList.appendChild(countryLink);
+        priceList.appendChild(priceContainer);
     }
 }
 
