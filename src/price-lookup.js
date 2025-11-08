@@ -3,13 +3,13 @@ const articleElement = document.querySelector('.pip-product-identifier__value');
 const rawArticleNumber = articleElement?.textContent.trim();
 const articleNumber = rawArticleNumber?.replace(/\./g, '');
 
-// Mapping of EU country codes to their IKEA product base URLs
+// Mapping of country codes to their IKEA base URLs
 const countryBaseUrls = {
-    de: 'https://www.ikea.com/de/de/p/',
-    fr: 'https://www.ikea.com/fr/fr/p/',
-    it: 'https://www.ikea.com/it/it/p/',
-    es: 'https://www.ikea.com/es/es/p/',
-    nl: 'https://www.ikea.com/nl/nl/p/'
+    de: 'https://www.ikea.com/de/de/',
+    fr: 'https://www.ikea.com/fr/fr/',
+    it: 'https://www.ikea.com/it/it/',
+    es: 'https://www.ikea.com/es/es/',
+    nl: 'https://www.ikea.com/nl/nl/'
 };
 
 // Country names for better display
@@ -39,7 +39,7 @@ async function fetchPrices(articleNumber) {
     const pricesByCountry = {};
     const promises = Object.entries(countryBaseUrls).map(async ([code, baseUrl]) => {
         try {
-            const response = await fetch(`${baseUrl}${articleNumber}/`);
+            const response = await fetch(`${baseUrl}p/${articleNumber}/`);
             const html = await response.text();
             const doc = new DOMParser().parseFromString(html, 'text/html');
             const priceIntegerElement = doc.querySelector('.pip-price__integer');
@@ -141,7 +141,7 @@ function updateTooltipContent(tooltip, pricesByCountry, articleNum) {
 
     for (const [code, data] of Object.entries(pricesByCountry)) {
         const countryLink = document.createElement('a');
-        countryLink.href = `${countryBaseUrls[code]}${articleNum}/`;
+        countryLink.href = `${countryBaseUrls[code]}p/${articleNum}/`;
         countryLink.target = '_blank';
         countryLink.rel = 'noopener noreferrer';
         countryLink.style.cssText = `
@@ -157,7 +157,7 @@ function updateTooltipContent(tooltip, pricesByCountry, articleNum) {
         countryLink.textContent = countryNames[code];
 
         const priceLink = document.createElement('a');
-        priceLink.href = `${countryBaseUrls[code]}${articleNum}/`;
+        priceLink.href = `${countryBaseUrls[code]}p/${articleNum}/`;
         priceLink.target = '_blank';
         priceLink.rel = 'noopener noreferrer';
         priceLink.style.cssText = `
@@ -366,25 +366,6 @@ async function processCartItem(item) {
     });
 }
 
-// Generate shopping cart URL for a specific country with all items
-function getCartUrlForCountry(countryCode) {
-    // Map country codes to their cart base URLs
-    const cartBaseUrls = {
-        de: 'https://www.ikea.com/de/de/shoppingcart/',
-        fr: 'https://www.ikea.com/fr/fr/shoppingcart/',
-        it: 'https://www.ikea.com/it/it/shoppingcart/',
-        es: 'https://www.ikea.com/es/es/shoppingcart/',
-        nl: 'https://www.ikea.com/nl/nl/shoppingcart/'
-    };
-    
-    // Build query string with all cart items
-    const itemParams = cartItemsData
-        .map(item => `${item.articleNumber}:${item.quantity}`)
-        .join(',');
-    
-    return `${cartBaseUrls[countryCode]}?items=${itemParams}`;
-}
-
 // Calculate total prices for all cart items by country
 function calculateTotalsByCountry() {
     const totalsByCountry = {};
@@ -494,18 +475,9 @@ function updateTotalTooltipContent(tooltip, totalsByCountry) {
         return;
     }
 
-    // Map country codes to their cart URLs
-    const cartUrls = {
-        de: 'https://www.ikea.com/de/de/shoppingcart/',
-        fr: 'https://www.ikea.com/fr/fr/shoppingcart/',
-        it: 'https://www.ikea.com/it/it/shoppingcart/',
-        es: 'https://www.ikea.com/es/es/shoppingcart/',
-        nl: 'https://www.ikea.com/nl/nl/shoppingcart/'
-    };
-
     for (const [code, data] of Object.entries(totalsByCountry)) {
         const countryLink = document.createElement('a');
-        countryLink.href = cartUrls[code];
+        countryLink.href = `${countryBaseUrls[code]}shoppingcart/`;
         countryLink.target = '_blank';
         countryLink.rel = 'noopener noreferrer';
         countryLink.style.cssText = `
@@ -521,7 +493,7 @@ function updateTotalTooltipContent(tooltip, totalsByCountry) {
         countryLink.textContent = countryNames[code];
 
         const priceContainer = document.createElement('a');
-        priceContainer.href = cartUrls[code];
+        countryLink.href = `${countryBaseUrls[code]}shoppingcart/`;
         priceContainer.target = '_blank';
         priceContainer.rel = 'noopener noreferrer';
         priceContainer.style.cssText = `
