@@ -17,7 +17,7 @@ A lightweight browser extension that helps you find the best deals by comparing 
 #### Firefox (debug mode)
 1. Clone (or download) the source code
 2. Open Firefox and navigate to `about:debugging#/runtime/this-firefox`
-3. Click the gear icon ⚙️ and select "Load Temporary Add-On"
+3. Select "Load Temporary Add-On"
 4. Select the `manifest.json` file from the source code
 
 
