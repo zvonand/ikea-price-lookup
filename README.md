@@ -13,6 +13,16 @@ A lightweight browser extension that helps you find the best deals by comparing 
 3. View prices from different countries side-by-side
 4. Click on the country name to open the article in that country
 
+## Installation
+* From [Chrome Web Store](https://chromewebstore.google.com/detail/ancodkelcobgobmiknmhjelaidnofinn)
+
+### Firefox (debug mode)
+1. Clone (or download) the source code
+2. Open Firefox and navigate to `about:debugging#/runtime/this-firefox`
+3. Click the gear icon ⚙️ and select "Load Temporary Add-On"
+4. Select the `manifest.json` file from the source code
+
+
 <!---
 ## 📦 Installation
 
