@@ -1,10 +1,8 @@
 # Ikea Price Lookup
 
-**Compare IKEA prices across different countries instantly!**
+**Compare IKEA prices across different countries**
 
 A lightweight browser extension that helps you find the best deals by comparing IKEA product prices in multiple regions.
-
----
 
 ## Usage
 
@@ -16,7 +14,7 @@ A lightweight browser extension that helps you find the best deals by comparing 
 ## Installation
 * From [Chrome Web Store](https://chromewebstore.google.com/detail/ancodkelcobgobmiknmhjelaidnofinn)
 
-### Firefox (debug mode)
+#### Firefox (debug mode)
 1. Clone (or download) the source code
 2. Open Firefox and navigate to `about:debugging#/runtime/this-firefox`
 3. Click the gear icon ⚙️ and select "Load Temporary Add-On"
