@@ -1,3 +1,6 @@
+// Browser API compatibility - use chrome or browser depending on what's available
+const browserAPI = typeof browser !== 'undefined' ? browser : chrome;
+
 // Extract the article number from the current product page and remove dots
 const articleElement = document.querySelector('.pip-product-identifier__value');
 const rawArticleNumber = articleElement?.textContent.trim();
@@ -9,9 +12,9 @@ let countryBaseUrls = {};
 // Load user settings
 async function loadSettings() {
     try {
-        const result = await browser.storage.sync.get('selectedCountries');
+        const result = await browserAPI.storage.sync.get('selectedCountries');
         const selectedCountries = result.selectedCountries || defaultCountries;
-        
+    
         // Filter countryBaseUrls based on selected countries
         countryBaseUrls = {};
         for (const code of selectedCountries) {
@@ -643,7 +646,7 @@ const observer = new MutationObserver((mutations) => {
 observer.observe(document.body, { childList: true, subtree: true });
 
 // Listen for settings changes
-browser.storage.onChanged.addListener((changes, area) => {
+browserAPI.storage.onChanged.addListener((changes, area) => {
     if (area === 'sync' && changes.selectedCountries) {
         // Reload settings and reinitialize
         initialize();

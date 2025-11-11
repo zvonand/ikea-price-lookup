@@ -1,12 +1,15 @@
+// Browser API compatibility - use chrome or browser depending on what's available
+const browserAPI = typeof browser !== 'undefined' ? browser : chrome;
+
 // Load saved settings
 async function loadSettings() {
-    const result = await browser.storage.sync.get('selectedCountries');
+    const result = await browserAPI.storage.sync.get('selectedCountries');
     return result.selectedCountries || defaultCountries;
 }
 
 // Save settings
 async function saveSettings(selectedCountries) {
-    await browser.storage.sync.set({ selectedCountries });
+    await browserAPI.storage.sync.set({ selectedCountries });
 }
 
 // Show status message
