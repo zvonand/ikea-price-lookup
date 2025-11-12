@@ -13,7 +13,7 @@ A lightweight browser extension that helps you find the best deals by comparing 
 
 ## Installation
 * For [Google Chrome](https://chromewebstore.google.com/detail/ancodkelcobgobmiknmhjelaidnofinn)
-* For [Mozilla Firefox](https://chromewebstore.google.com/detail/ancodkelcobgobmiknmhjelaidnofinn)
+* For [Mozilla Firefox](https://addons.mozilla.org/addon/ikea-price-compare/)
 
 #### Firefox (debug mode)
 1. Clone (or download) the source code
