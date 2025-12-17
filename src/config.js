@@ -2,6 +2,11 @@
 
 // Mapping of all available country codes to their IKEA base URLs
 const allCountryBaseUrls = {
+    us: 'https://www.ikea.com/us/en/',
+    ca: 'https://www.ikea.com/ca/en/',
+    mx: 'https://www.ikea.com/mx/es/',
+    cl: 'https://www.ikea.com/cl/es/',
+    co: 'https://www.ikea.com/co/es/',
     de: 'https://www.ikea.com/de/de/',
     fr: 'https://www.ikea.com/fr/fr/',
     it: 'https://www.ikea.com/it/it/',
@@ -28,6 +33,11 @@ const allCountryBaseUrls = {
 
 // Country names for better display
 const countryNames = {
+    us: '🇺🇸 USA',
+    ca: '🇨🇦 Canada',
+    mx: '🇲🇽 Mexico',
+    cl: '🇨🇱 Chile',
+    co: '🇨🇴 Colombia',
     de: '🇩🇪 Germany',
     fr: '🇫🇷 France',
     it: '🇮🇹 Italy',
@@ -53,7 +63,14 @@ const countryNames = {
 };
 
 // Fallback currencies for countries where currency is not displayed on website
+// Using international currency codes to avoid confusion between different dollars/pesos
+// Euro uses € symbol as it's universally recognized
 const fallbackCurrencies = {
+    us: 'USD',     // USA - US Dollar
+    ca: 'CAD',     // Canada - Canadian Dollar
+    mx: 'MXN',     // Mexico - Mexican Peso
+    cl: 'CLP',     // Chile - Chilean Peso
+    co: 'COP',     // Colombia - Colombian Peso
     se: 'SEK',     // Sweden - Swedish Krona
     dk: 'DKK',     // Denmark - Danish Krone
     cz: 'CZK',     // Czechia - Czech Koruna
@@ -68,7 +85,14 @@ const fallbackCurrencies = {
     ie: '€',       // Ireland - Euro
     ch: 'CHF',     // Switzerland - Swiss Franc
     sk: '€',       // Slovakia - Euro
-    si: '€'        // Slovenia - Euro
+    si: '€',       // Slovenia - Euro
+    de: '€',       // Germany - Euro
+    fr: '€',       // France - Euro
+    it: '€',       // Italy - Euro
+    es: '€',       // Spain - Euro
+    nl: '€',       // Netherlands - Euro
+    pt: '€',       // Portugal - Euro
+    at: '€'        // Austria - Euro
 };
 
 // Default countries (original 5)

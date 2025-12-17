@@ -1,10 +1,39 @@
 // Browser API compatibility - use chrome or browser depending on what's available
 const browserAPI = typeof browser !== 'undefined' ? browser : chrome;
 
+// Detect current country from URL (e.g., /us/en/ -> 'us')
+function getCurrentCountry() {
+    const match = window.location.pathname.match(/^\/([a-z]{2})\//);
+    return match ? match[1] : null;
+}
+
+const currentCountry = getCurrentCountry();
+
 // Extract the article number from the current product page and remove dots
-const articleElement = document.querySelector('.pip-product-identifier__value');
-const rawArticleNumber = articleElement?.textContent.trim();
-const articleNumber = rawArticleNumber?.replace(/\./g, '');
+// Support old (pip-) and new (pipcom-, pipf-) class naming
+function getArticleNumber() {
+    // Try DOM elements first
+    const articleElement = document.querySelector('.pip-product-identifier__value, .pipcom-product-identifier__value, .pipf-product-identifier__value');
+    if (articleElement) {
+        return articleElement.textContent.trim().replace(/\./g, '');
+    }
+    
+    // Fallback: extract from URL (e.g., /p/product-name-12345678/)
+    const urlMatch = window.location.pathname.match(/\/p\/[^\/]+-(\d{8})\/?$/);
+    if (urlMatch) {
+        return urlMatch[1];
+    }
+    
+    // Try another URL pattern (some countries use different formats)
+    const urlMatch2 = window.location.pathname.match(/[-\/](\d{8})\/?$/);
+    if (urlMatch2) {
+        return urlMatch2[1];
+    }
+    
+    return null;
+}
+
+const articleNumber = getArticleNumber();
 
 // Active countries based on user settings (loaded from config.js)
 let countryBaseUrls = {};
@@ -53,9 +82,10 @@ async function fetchPrices(articleNumber) {
             const response = await fetch(`${baseUrl}p/${articleNumber}/`);
             const html = await response.text();
             const doc = new DOMParser().parseFromString(html, 'text/html');
-            const priceIntegerElement = doc.querySelector('.pip-price__integer');
-            const priceDecimalElement = doc.querySelector('.pip-price__decimal');
-            const currencyElement = doc.querySelector('.pip-price__currency');
+            // Support old (pip-) and new (pipcom-, pipf-) class naming
+            const priceIntegerElement = doc.querySelector('.pip-price__integer, .pipcom-price__integer, .pipf-price__integer');
+            const priceDecimalElement = doc.querySelector('.pip-price__decimal, .pipcom-price__decimal, .pipf-price__decimal');
+            const currencyElement = doc.querySelector('.pip-price__currency, .pipcom-price__currency, .pipf-price__currency');
         
             if (priceIntegerElement) {
                 const integerPart = parseFloat(priceIntegerElement.textContent.trim().replace(/\s/g, ''));
@@ -75,17 +105,17 @@ async function fetchPrices(articleNumber) {
             
                 const price = integerPart + decimalPart;
                 
-                // Get currency from page
-                let currency = currencyElement?.textContent.trim() || '';
+                // Always use international currency code from fallback for clarity
+                // This avoids confusion between different dollars ($) and other ambiguous symbols
+                let currency = fallbackCurrencies[code] || '';
                 
-                // Check if currency is only punctuation/dashes (like ",–" in Czechia) - if so, ignore it
-                if (currency && currency.match(/^[,.\\s\-–]+$/)) {
-                    currency = '';
-                }
-                
-                // If currency is empty, use fallback
-                if (!currency) {
-                    currency = fallbackCurrencies[code] || '';
+                // If no fallback defined, try to get from page as last resort
+                if (!currency && currencyElement) {
+                    currency = currencyElement.textContent.trim() || '';
+                    // Check if currency is only punctuation/dashes - if so, clear it
+                    if (currency && currency.match(/^[,.\\s\-–$€£]+$/)) {
+                        currency = '';
+                    }
                 }
                 
                 pricesByCountry[code] = { price, currency };
@@ -104,26 +134,67 @@ async function fetchPrices(articleNumber) {
     return pricesByCountry;
 }
 
+// Inject loading spinner CSS if not already present
+function injectSpinnerStyles() {
+    if (document.getElementById('ikea-price-lookup-styles')) return;
+    
+    const style = document.createElement('style');
+    style.id = 'ikea-price-lookup-styles';
+    style.textContent = `
+        @keyframes ikea-spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .ikea-loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #e5e5e5;
+            border-top-color: #0058a3;
+            border-radius: 50%;
+            animation: ikea-spin 0.8s linear infinite;
+        }
+        .ikea-loading-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 0;
+            color: #666;
+        }
+        .ikea-price-tooltip,
+        .ikea-total-price-tooltip {
+            position: fixed !important;
+            z-index: 2147483647 !important;
+            overflow: visible !important;
+            clip: auto !important;
+            clip-path: none !important;
+        }
+    `;
+    document.head.appendChild(style);
+}
+
 // Create and inject the tooltip
 function createPriceTooltip(priceElement, articleNum) {
+    // Ensure spinner styles are injected
+    injectSpinnerStyles();
+    
     const tooltip = document.createElement('div');
     tooltip.className = 'ikea-price-tooltip';
     tooltip.style.cssText = `
-        position: absolute;
+        position: fixed;
         background: white;
         border: 2px solid #0058a3;
         border-radius: 8px;
         padding: 12px 20px;
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-        z-index: 10000;
+        z-index: 100000;
         display: none;
         width: max-content;
-        min-width: max-content;
+        min-width: 180px;
         max-width: 400px;
         font-family: 'Noto IKEA', 'Noto Sans', sans-serif;
         font-size: 14px;
         line-height: 1.5;
-        margin-top: 8px;
     `;
 
     const header = document.createElement('div');
@@ -146,15 +217,21 @@ function createPriceTooltip(priceElement, articleNum) {
         gap: 2px 24px;
         align-items: center;
     `;
+    
+    // Add loading indicator by default
+    priceList.innerHTML = `
+        <div class="ikea-loading-container" style="grid-column: 1 / -1;">
+            <div class="ikea-loading-spinner"></div>
+            <span>Loading prices...</span>
+        </div>
+    `;
     tooltip.appendChild(priceList);
 
     // Store article number for later use
     tooltip.dataset.articleNumber = articleNum;
 
-    // Position tooltip relative to price element
-    const container = priceElement.closest('.pip-temp-price, .pip-price, .cart-ingka-price') || priceElement.parentElement;
-    container.style.position = 'relative';
-    container.appendChild(tooltip);
+    // Append tooltip to body for fixed positioning
+    document.body.appendChild(tooltip);
 
     return tooltip;
 }
@@ -165,11 +242,21 @@ function updateTooltipContent(tooltip, pricesByCountry, articleNum) {
     priceList.innerHTML = '';
 
     if (!pricesByCountry || Object.keys(pricesByCountry).length === 0) {
-        priceList.innerHTML = '<div style="color: #666; font-style: italic;">Loading prices...</div>';
+        priceList.innerHTML = `
+            <div class="ikea-loading-container" style="grid-column: 1 / -1;">
+                <div class="ikea-loading-spinner"></div>
+                <span>Loading prices...</span>
+            </div>
+        `;
         return;
     }
 
     for (const [code, data] of Object.entries(pricesByCountry)) {
+        // Skip the current country - user already sees that price
+        if (code === currentCountry) {
+            continue;
+        }
+        
         const row = document.createElement('a');
         row.href = `${countryBaseUrls[code]}p/${articleNum}/`;
         row.target = '_blank';
@@ -214,10 +301,57 @@ function updateTooltipContent(tooltip, pricesByCountry, articleNum) {
     }
 }
 
-// Position tooltip below the price element
+// Store last mouse position for tooltip positioning
+let lastMouseX = 0;
+let lastMouseY = 0;
+
+document.addEventListener('mousemove', (e) => {
+    lastMouseX = e.clientX;
+    lastMouseY = e.clientY;
+});
+
+// Position tooltip near the mouse cursor
 function positionTooltip(tooltip, priceElement) {
-    tooltip.style.left = '0';
-    tooltip.style.top = '100%';
+    // Make tooltip visible temporarily to measure it
+    const wasHidden = tooltip.style.display === 'none';
+    if (wasHidden) {
+        tooltip.style.visibility = 'hidden';
+        tooltip.style.display = 'block';
+    }
+    
+    const tooltipRect = tooltip.getBoundingClientRect();
+    
+    if (wasHidden) {
+        tooltip.style.display = 'none';
+        tooltip.style.visibility = 'visible';
+    }
+    
+    // Position below and slightly to the right of mouse cursor
+    let top = lastMouseY + 15;
+    let left = lastMouseX + 10;
+    
+    // Make sure tooltip doesn't go off screen to the right
+    if (left + tooltipRect.width > window.innerWidth - 20) {
+        left = lastMouseX - tooltipRect.width - 10;
+    }
+    
+    // Make sure tooltip doesn't go off screen to the left
+    if (left < 20) {
+        left = 20;
+    }
+    
+    // If tooltip would go below viewport, show it above the cursor instead
+    if (top + tooltipRect.height > window.innerHeight - 20) {
+        top = lastMouseY - tooltipRect.height - 15;
+    }
+    
+    // Make sure it doesn't go above viewport
+    if (top < 20) {
+        top = 20;
+    }
+    
+    tooltip.style.left = `${left}px`;
+    tooltip.style.top = `${top}px`;
 }
 
 // Attach hover listeners to a price element
@@ -272,8 +406,8 @@ function attachPriceHoverListeners(priceElement, articleNum) {
 function handleProductPage() {
     if (!articleNumber) return;
 
-    // Find both regular price and discounted price elements
-    const priceElements = document.querySelectorAll('.pip-temp-price__integer, .pip-price__integer');
+    // Find both regular price and discounted price elements (support old and new class names)
+    const priceElements = document.querySelectorAll('.pip-temp-price__integer, .pip-price__integer, .pipcom-temp-price__integer, .pipcom-price__integer, .pipf-temp-price__integer, .pipf-price__integer');
     
     if (priceElements.length > 0) {
         // Attach to all price elements (handles both old and new prices)
@@ -290,16 +424,26 @@ function handleProductPage() {
 
 // Extract article number and quantity from cart item
 function extractCartItemData(item) {
-    // Extract article number from product identifier
+    // Extract article number from product identifier or product-id attribute
     let articleNumber = null;
-    const identifierElement = item.querySelector('.cart-ingka-product-identifier__value');
-    if (identifierElement) {
-        articleNumber = identifierElement.textContent.trim().replace(/\./g, '');
+    
+    // Try product-id attribute first (used in Colombia, Chile, etc.)
+    const productIdAttr = item.getAttribute('product-id') || item.closest('[product-id]')?.getAttribute('product-id');
+    if (productIdAttr) {
+        articleNumber = productIdAttr.replace(/\./g, '');
     }
     
-    // Extract quantity from quantity stepper input
+    // Fallback to identifier element (used in Germany, etc.)
+    if (!articleNumber) {
+        const identifierElement = item.querySelector('.cart-ingka-product-identifier__value');
+        if (identifierElement) {
+            articleNumber = identifierElement.textContent.trim().replace(/\./g, '');
+        }
+    }
+    
+    // Extract quantity from quantity stepper input (support both class naming conventions)
     let quantity = 1;
-    const quantityInput = item.querySelector('.cart-ingka-quantity-stepper__input');
+    const quantityInput = item.querySelector('.cart-ingka-quantity-stepper__input, .cart-quantity-stepper__input');
     if (quantityInput) {
         quantity = parseInt(quantityInput.value) || 1;
     }
@@ -312,11 +456,21 @@ async function handleCartPage() {
     // Clear previous cart data
     cartItemsData.length = 0;
 
-    // Find all cart items using the list structure
-    const cartItems = document.querySelectorAll('[class*="_productList"] > li [itemtype="http://schema.org/Product"]');
+    // Find all cart items using various selectors for different country sites
+    let cartItems = document.querySelectorAll('[class*="_productList"] > li [itemtype="http://schema.org/Product"]');
+
+    // Try alternative selector for Colombia/Chile style carts (items with product-id attribute)
+    if (cartItems.length === 0) {
+        cartItems = document.querySelectorAll('[product-id]');
+    }
+    
+    // Try cart item wrapper class
+    if (cartItems.length === 0) {
+        cartItems = document.querySelectorAll('[class*="_cartItem"]');
+    }
 
     if (cartItems.length === 0) {
-        // Fallback selector
+        // Fallback selector for German-style carts
         const fallbackItems = document.querySelectorAll('.cart-ingka-product-identifier__value');
 
         for (const identifierElement of fallbackItems) {
@@ -344,30 +498,33 @@ async function processCartItem(item) {
     const { articleNumber, quantity } = extractCartItemData(item);
     
     if (!articleNumber) {
-        console.warn('Could not extract article number from cart item:', item);
         return;
     }
 
-    // Find the price element - the span that contains the screen reader text
-    const priceElement = item.querySelector('.cart-ingka-price__sr-text');
+    // Find the price container to attach tooltip to
+    // Try multiple selectors for different cart formats
+    const priceContainer = item.querySelector(
+        '.cart-ingka-price-module__price, .cart-price-module__price, ' +
+        '.cart-ingka-price-module, .cart-price-module'
+    );
     
-    if (!priceElement) {
-        console.warn('Could not find price element for cart item:', item);
+    if (!priceContainer) {
         return;
     }
     
-    // Attach hover tooltip to the visible price container
-    const visiblePriceContainer = priceElement.closest('.cart-ingka-price');
-    if (visiblePriceContainer) {
-        attachPriceHoverListeners(visiblePriceContainer, articleNumber);
-    }
+    // Attach hover tooltip to the price container
+    attachPriceHoverListeners(priceContainer, articleNumber);
     
     // Fetch prices for this item
     const pricesByCountry = await fetchPrices(articleNumber);
     
-    // Get product name - it's in the link within the price module
+    // Get product name - try multiple selectors for different cart formats
     let productName = '';
-    const productNameElement = item.querySelector('.cart-ingka-price-module__name-decorator .cart-ingka-link .cart-ingka-text');
+    const productNameElement = item.querySelector(
+        '.cart-ingka-price-module__name-decorator .cart-ingka-link .cart-ingka-text, ' +
+        '.cart-price-module__name-decorator a, ' +
+        '.cart-price-module__name-decorator .cart-link'
+    );
     if (productNameElement) {
         productName = productNameElement.textContent.trim();
     }
@@ -429,26 +586,26 @@ function calculateTotalsByCountry() {
 
 // Create tooltip for cart total
 function createTotalPriceTooltip(totalElement) {
+    // Ensure spinner styles are injected
+    injectSpinnerStyles();
+    
     const tooltip = document.createElement('div');
     tooltip.className = 'ikea-total-price-tooltip';
     tooltip.style.cssText = `
-        position: absolute;
+        position: fixed;
         background: white;
         border: 2px solid #0058a3;
         border-radius: 8px;
         padding: 12px 20px;
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-        z-index: 10000;
+        z-index: 100000;
         display: none;
         width: max-content;
-        min-width: max-content;
+        min-width: 180px;
         max-width: 400px;
         font-family: 'Noto IKEA', 'Noto Sans', sans-serif;
         font-size: 14px;
         line-height: 1.5;
-        margin-top: 8px;
-        right: 0;
-        top: 100%;
     `;
 
     const header = document.createElement('div');
@@ -471,11 +628,21 @@ function createTotalPriceTooltip(totalElement) {
         gap: 2px 24px;
         align-items: center;
     `;
+    
+    // Add loading indicator by default
+    priceList.innerHTML = `
+        <div class="ikea-loading-container" style="grid-column: 1 / -1;">
+            <div class="ikea-loading-spinner"></div>
+            <span>Calculating totals...</span>
+        </div>
+    `;
     tooltip.appendChild(priceList);
 
-    // Position tooltip relative to total price element
-    totalElement.style.position = 'relative';
-    totalElement.appendChild(tooltip);
+    // Append tooltip to body for fixed positioning
+    document.body.appendChild(tooltip);
+    
+    // Store reference to the element for positioning
+    tooltip.dataset.targetElement = 'total';
 
     return tooltip;
 }
@@ -486,11 +653,21 @@ function updateTotalTooltipContent(tooltip, totalsByCountry) {
     priceList.innerHTML = '';
 
     if (!totalsByCountry || Object.keys(totalsByCountry).length === 0) {
-        priceList.innerHTML = '<div style="color: #666; font-style: italic;">Calculating totals...</div>';
+        priceList.innerHTML = `
+            <div class="ikea-loading-container" style="grid-column: 1 / -1;">
+                <div class="ikea-loading-spinner"></div>
+                <span>Calculating totals...</span>
+            </div>
+        `;
         return;
     }
 
     for (const [code, data] of Object.entries(totalsByCountry)) {
+        // Skip the current country - user already sees that total
+        if (code === currentCountry) {
+            continue;
+        }
+        
         const row = document.createElement('a');
         row.href = `${countryBaseUrls[code]}shoppingcart/`;
         row.target = '_blank';
@@ -563,8 +740,13 @@ function updateTotalTooltipContent(tooltip, totalsByCountry) {
 
 // Attach hover listener to cart total price
 function attachTotalPriceHoverListener() {
-    // Find the total price element
-    const totalPriceElement = document.querySelector('#order-summary-total .cart-ingka-price');
+    // Find the total price element - support both cart formats
+    const totalPriceElement = document.querySelector(
+        '#order-summary-total .cart-ingka-price, ' +
+        '#order-summary-total .cart-price, ' +
+        '[data-testid="text-total-price"], ' +
+        '._totalPrice_hcu5x_77'
+    );
     
     if (!totalPriceElement) {
         console.warn('Could not find total price element');
@@ -586,6 +768,7 @@ function attachTotalPriceHoverListener() {
             hideTimeout = null;
         }
         tooltip.style.display = 'block';
+        positionTooltip(tooltip, totalPriceElement);
         
         // Calculate totals from cart items data
         const totalsByCountry = calculateTotalsByCountry();
@@ -620,16 +803,20 @@ async function initialize() {
     // Load settings first
     await loadSettings();
     
-    const isProductPage = document.querySelector('.pip-product-identifier__value');
+    // Detect product page by multiple indicators
+    const isProductPage = document.querySelector('.pip-product-identifier__value, .pipcom-product-identifier__value, .pipf-product-identifier__value, .pipcom-price-module, .pip-price-module, .pipf-price-module') || 
+                          window.location.pathname.match(/\/p\/[^\/]+-\d{8}\/?$/);
     const isCartPage = window.location.pathname.includes('/shoppingcart') || 
                        window.location.pathname.includes('/cart') ||
-                       document.querySelector('.cart-ingka-product-identifier__value');
+                       document.querySelector('.cart-ingka-product-identifier__value') ||
+                       document.querySelector('[product-id]') ||
+                       document.querySelector('[class*="_cartList"]');
 
     if (isProductPage) {
         handleProductPage();
     } else if (isCartPage) {
         // Wait a bit for dynamic content to load
-        setTimeout(handleCartPage, 1000);
+        setTimeout(handleCartPage, 1500);
     }
 }
 
