@@ -28,7 +28,8 @@ const allCountryBaseUrls = {
     hr: 'https://www.ikea.com/hr/hr/',
     eg: 'https://www.ikea.com/eg/en/',
     ie: 'https://www.ikea.com/ie/en/',
-    rs: 'https://www.ikea.com/rs/sr/'
+    rs: 'https://www.ikea.com/rs/sr/',
+    be: 'https://www.ikea.com/be/nl/'
 };
 
 // Country names for better display
@@ -59,7 +60,8 @@ const countryNames = {
     hr: '🇭🇷 Croatia',
     eg: '🇪🇬 Egypt',
     ie: '🇮🇪 Ireland',
-    rs: '🇷🇸 Serbia'
+    rs: '🇷🇸 Serbia',
+    be: '🇧🇪 Belgium'
 };
 
 // Fallback currencies for countries where currency is not displayed on website
@@ -92,7 +94,8 @@ const fallbackCurrencies = {
     es: '€',       // Spain - Euro
     nl: '€',       // Netherlands - Euro
     pt: '€',       // Portugal - Euro
-    at: '€'        // Austria - Euro
+    at: '€',       // Austria - Euro
+    be: '€'        // Belgium - Euro
 };
 
 // Default countries (original 5)
